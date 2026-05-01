@@ -36,8 +36,13 @@ const customToast = {
           <div>
             <button
               onClick={async () => {
-                await onConfirm();
-                toast.dismiss(t.id);
+                try {
+                  await onConfirm();
+                } finally {
+                  // onConfirm이 throw해도 반드시 toast를 닫는다.
+                  // duration: Infinity이므로 finally 없이는 toast가 영구 잔류한다.
+                  toast.dismiss(t.id);
+                }
               }}
             >
               {confirmText}
