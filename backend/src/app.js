@@ -96,23 +96,24 @@ if (process.env.NODE_ENV === "development") {
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swagger.json");
 
-async function startServer() {
-  try {
-    await connectDB();
-    console.log("[LOG] MongoDB 연결 성공");
+// 2026-05-09 startServer.js로 분리 by all4null
+// async function startServer() {
+//   try {
+//     await connectDB();
+//     console.log("[LOG] MongoDB 연결 성공");
 
-    app.listen(PORT_NUMBER, () => {
-      console.log(`PORT: ${PORT_NUMBER}`);
-      console.log(`swagger: http://localhost:${PORT_NUMBER}/api-docs`);
-      console.log(`server: http://localhost:${PORT_NUMBER}`);
-    });
-  } catch (err) {
-    console.error("DB 연결 실패:", err);
-    process.exit(1);
-  }
-}
+//     app.listen(PORT_NUMBER, () => {
+//       console.log(`PORT: ${PORT_NUMBER}`);
+//       console.log(`swagger: http://localhost:${PORT_NUMBER}/api-docs`);
+//       console.log(`server: http://localhost:${PORT_NUMBER}`);
+//     });
+//   } catch (err) {
+//     console.error("DB 연결 실패:", err);
+//     process.exit(1);
+//   }
+// }
 
-startServer();
+// startServer();
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "backoffice backend is running" });
@@ -152,3 +153,6 @@ app.use((err, req, res, next) => {
     error: { message: "Internal Server Error" },
   });
 });
+
+//server.js에서 app객체 사용가능하게 함
+module.exports = app;
