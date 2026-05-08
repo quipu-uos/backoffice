@@ -18,7 +18,8 @@ async function startServer() {
       console.log(`PORT: ${PORT}`);
       console.log(`swagger: http://localhost:${PORT}/api-docs`);
       console.log(`server: http://localhost:${PORT}`);
-
+      
+      insertDummyData(); //더미데이터 삽입
     });
   } catch (err) {
     console.error("DB 연결 실패:", err);
