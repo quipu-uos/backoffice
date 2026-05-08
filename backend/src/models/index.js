@@ -5,6 +5,8 @@ const Member = require("./Member");
 const Semina = require("./Semina");
 const File = require("./File");
 const Feature = require("./Feature");
+const ActivityType = require("./ActivityType");
+const ActivityItem = require("./ActivityItem");
 
 async function connectDB() {
   if (!config?.mongodbUri) {
@@ -24,4 +26,6 @@ module.exports = {
   Semina,
   File,
   Feature,
+  ActivityType,
+  ActivityItem
 };
