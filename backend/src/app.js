@@ -24,6 +24,7 @@ const loginRouter = require("../src/routes/login");
 const memberRouter = require("../src/routes/member");
 const seminaRouter = require("../src/routes/semina");
 const featureRouter = require("../src/routes/feature");
+const activityRouter = require("../src/routes/activity");
 
 const isProdOrTest = NODE_ENV === "production" || NODE_ENV === "test";
 const PORT_NUMBER = Number(PORT) || 3001;
@@ -95,23 +96,24 @@ if (process.env.NODE_ENV === "development") {
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swagger.json");
 
-async function startServer() {
-  try {
-    await connectDB();
-    console.log("[LOG] MongoDB 연결 성공");
+// 2026-05-09 startServer.js로 분리 by all4null
+// async function startServer() {
+//   try {
+//     await connectDB();
+//     console.log("[LOG] MongoDB 연결 성공");
 
-    app.listen(PORT_NUMBER, () => {
-      console.log(`PORT: ${PORT_NUMBER}`);
-      console.log(`swagger: http://localhost:${PORT_NUMBER}/api-docs`);
-      console.log(`server: http://localhost:${PORT_NUMBER}`);
-    });
-  } catch (err) {
-    console.error("DB 연결 실패:", err);
-    process.exit(1);
-  }
-}
+//     app.listen(PORT_NUMBER, () => {
+//       console.log(`PORT: ${PORT_NUMBER}`);
+//       console.log(`swagger: http://localhost:${PORT_NUMBER}/api-docs`);
+//       console.log(`server: http://localhost:${PORT_NUMBER}`);
+//     });
+//   } catch (err) {
+//     console.error("DB 연결 실패:", err);
+//     process.exit(1);
+//   }
+// }
 
-startServer();
+// startServer();
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "backoffice backend is running" });
@@ -127,6 +129,7 @@ app.use("/bo/semina", seminaRouter);
 app.use("/bo/feature", featureRouter);
 // 하위호환: 구버전 프론트가 /feature/* 를 호출하는 경우 지원
 app.use("/feature", featureRouter);
+app.use("/bo", activityRouter); // activityRouter 추가
 
 if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -150,3 +153,6 @@ app.use((err, req, res, next) => {
     error: { message: "Internal Server Error" },
   });
 });
+
+//server.js에서 app객체 사용가능하게 함
+module.exports = app;

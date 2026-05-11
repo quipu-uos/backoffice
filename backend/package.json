@@ -1,12 +1,12 @@
 {
   "name": "backoffice-backend",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
-  "main": "src/app.js",
+  "main": "src/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "author": "ejjem",
   "license": "MIT",

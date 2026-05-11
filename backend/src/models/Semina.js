@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const seminaSchema = new mongoose.Schema(
   {
-    semina_id: { type: Number, required: true, unique: true, index: true },
+    //semina_id: { type: Number, required: true, unique: true, index: true },
     speaker: { type: String, required: true, trim: true },
     topic: { type: String, required: true, trim: true },
     detail: { type: String, required: true },
