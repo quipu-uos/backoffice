@@ -356,6 +356,781 @@
           }
         }
       }
+    },
+    "/bo/activity-types": {
+      "post": {
+        "tags": ["Activity CMS"],
+        "summary": "Create ActivityType",
+        "description": "Activity CMS에서 사용할 활동 타입과 필드 설계도를 생성합니다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateActivityTypeRequest"
+              },
+              "example": {
+                "typeId": "study",
+                "displayName": "스터디",
+                "description": "정기 스터디 활동",
+                "order": 1,
+                "isActive": true,
+                "fields": [
+                  {
+                    "fieldId": "topic",
+                    "label": "주제",
+                    "inputType": "shortText",
+                    "required": true,
+                    "order": 1
+                  },
+                  {
+                    "fieldId": "details",
+                    "label": "상세 설명",
+                    "inputType": "longText",
+                    "required": true,
+                    "order": 2
+                  },
+                  {
+                    "fieldId": "images",
+                    "label": "이미지",
+                    "inputType": "imageList",
+                    "required": false,
+                    "order": 3,
+                    "fileConfig": {
+                      "maxFiles": 5,
+                      "maxSizeMB": 5
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "생성 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityType"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "이미 존재하는 typeId"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Activity CMS"],
+        "summary": "List ActivityTypes",
+        "description": "활동 타입 설계도 목록을 조회합니다.",
+        "parameters": [
+          {
+            "name": "isActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "활성 타입만 조회하려면 true"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ActivityType"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/bo/activity-types/order": {
+      "patch": {
+        "tags": ["Activity CMS"],
+        "summary": "Reorder ActivityTypes",
+        "description": "활동 타입 탭 노출 순서를 일괄 변경합니다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderActivityTypeRequest"
+              },
+              "example": {
+                "items": [
+                  {
+                    "typeId": "study",
+                    "order": 1
+                  },
+                  {
+                    "typeId": "semina",
+                    "order": 2
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/bo/activity-types/{id}": {
+      "patch": {
+        "tags": ["Activity CMS"],
+        "summary": "Update ActivityType",
+        "description": "ActivityType을 수정합니다. id에는 MongoDB _id 또는 typeId를 넣을 수 있습니다.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "study"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActivityTypeRequest"
+              },
+              "example": {
+                "displayName": "스터디",
+                "description": "정기 스터디 및 프로젝트",
+                "order": 1,
+                "isActive": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "수정 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityType"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/bo/activities": {
+      "post": {
+        "tags": ["Activity CMS"],
+        "summary": "Create ActivityItem",
+        "description": "ActivityType.fields 설계도에 맞는 실제 활동 데이터를 생성합니다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateActivityItemRequest"
+              },
+              "example": {
+                "typeKey": "study",
+                "order": 1,
+                "isVisible": true,
+                "data": {
+                  "topic": "React 기초 스터디",
+                  "details": "컴포넌트와 상태 관리를 학습합니다.",
+                  "images": [
+                    "https://example.com/study-1.png"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "생성 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Activity CMS"],
+        "summary": "List ActivityItems",
+        "description": "활동 콘텐츠 목록을 조회합니다.",
+        "parameters": [
+          {
+            "name": "typeKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "study"
+          },
+          {
+            "name": "isVisible",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "공개 콘텐츠만 조회하려면 true"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "조회 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ActivityItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/bo/activities/order": {
+      "patch": {
+        "tags": ["Activity CMS"],
+        "summary": "Reorder ActivityItems",
+        "description": "동일 typeKey 안에서 활동 콘텐츠 노출 순서를 일괄 변경합니다.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderActivityItemRequest"
+              },
+              "example": {
+                "typeKey": "study",
+                "items": [
+                  {
+                    "_id": "662000000000000000000001",
+                    "order": 1
+                  },
+                  {
+                    "_id": "662000000000000000000002",
+                    "order": 2
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/bo/activities/{id}": {
+      "patch": {
+        "tags": ["Activity CMS"],
+        "summary": "Update ActivityItem",
+        "description": "ActivityItem을 수정합니다. id에는 MongoDB _id를 넣습니다.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "662000000000000000000001"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateActivityItemRequest"
+              },
+              "example": {
+                "isVisible": true,
+                "data": {
+                  "topic": "React 심화 스터디",
+                  "details": "Hooks와 렌더링 최적화를 학습합니다.",
+                  "images": [
+                    "https://example.com/study-2.png"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "수정 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Activity CMS"],
+        "summary": "Delete ActivityItem",
+        "description": "ActivityItem을 삭제합니다.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "662000000000000000000001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessMessage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActivityField": {
+        "type": "object",
+        "required": ["fieldId", "label", "inputType", "required", "order"],
+        "properties": {
+          "fieldId": {
+            "type": "string",
+            "example": "topic"
+          },
+          "label": {
+            "type": "string",
+            "example": "주제"
+          },
+          "inputType": {
+            "type": "string",
+            "enum": ["shortText", "longText", "date", "dateRange", "image", "imageList", "url", "icon"],
+            "example": "shortText"
+          },
+          "required": {
+            "type": "boolean",
+            "example": true
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "fileConfig": {
+            "type": "object",
+            "properties": {
+              "maxFiles": {
+                "type": "integer",
+                "minimum": 1,
+                "example": 5
+              },
+              "maxSizeMB": {
+                "type": "number",
+                "minimum": 0,
+                "example": 5
+              }
+            }
+          }
+        }
+      },
+      "ActivityType": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "662000000000000000000001"
+          },
+          "typeId": {
+            "type": "string",
+            "example": "study"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "스터디"
+          },
+          "description": {
+            "type": "string",
+            "example": "정기 스터디 활동"
+          },
+          "order": {
+            "type": "integer",
+            "example": 1
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityField"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ActivityItem": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string",
+            "example": "662000000000000000000010"
+          },
+          "typeKey": {
+            "type": "string",
+            "example": "study"
+          },
+          "order": {
+            "type": "integer",
+            "example": 1
+          },
+          "isVisible": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true,
+            "example": {
+              "topic": "React 기초 스터디",
+              "details": "컴포넌트와 상태 관리를 학습합니다.",
+              "images": ["https://example.com/study-1.png"]
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateActivityTypeRequest": {
+        "type": "object",
+        "required": ["typeId", "displayName", "fields"],
+        "properties": {
+          "typeId": {
+            "type": "string",
+            "example": "study"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "스터디"
+          },
+          "description": {
+            "type": "string",
+            "example": "정기 스터디 활동"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityField"
+            }
+          }
+        }
+      },
+      "UpdateActivityTypeRequest": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityField"
+            }
+          }
+        }
+      },
+      "CreateActivityItemRequest": {
+        "type": "object",
+        "required": ["typeKey", "data"],
+        "properties": {
+          "typeKey": {
+            "type": "string",
+            "example": "study"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "isVisible": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "UpdateActivityItemRequest": {
+        "type": "object",
+        "properties": {
+          "typeKey": {
+            "type": "string",
+            "example": "study"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isVisible": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ReorderActivityTypeRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["order"],
+              "properties": {
+                "_id": {
+                  "type": "string"
+                },
+                "typeId": {
+                  "type": "string"
+                },
+                "order": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      },
+      "ReorderActivityItemRequest": {
+        "type": "object",
+        "required": ["typeKey", "items"],
+        "properties": {
+          "typeKey": {
+            "type": "string",
+            "example": "study"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["_id", "order"],
+              "properties": {
+                "_id": {
+                  "type": "string"
+                },
+                "order": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "SuccessMessage": {
+        "description": "요청 성공",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "잘못된 요청"
+      },
+      "Forbidden": {
+        "description": "로그인이 필요합니다."
+      },
+      "NotFound": {
+        "description": "리소스를 찾을 수 없습니다."
+      },
+      "ServerError": {
+        "description": "서버 오류"
+      }
     }
   }
 }

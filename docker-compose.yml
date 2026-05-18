@@ -1,0 +1,94 @@
+name: quipu_backoffice
+
+services:
+  backoffice_frontend:
+    image: node:20
+    container_name: backoffice_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - backoffice_frontend_node_modules:/app/node_modules
+    ports:
+      - "3002:3000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
+      - CHOKIDAR_USEPOLLING=true
+      - WDS_SOCKET_PORT=3002
+      - REACT_APP_BACKEND_URL=http://localhost:3003
+    command: sh -c "npm install && npm start"
+    depends_on:
+      backoffice_backend:
+        condition: service_started
+
+  backoffice_backend:
+    image: node:20
+    container_name: backoffice_backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - backoffice_backend_node_modules:/app/node_modules
+    ports:
+      - "3003:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - CLIENT_ORIGIN_DEV=http://localhost:3002
+      - COOKIE_SECRET=${COOKIE_SECRET:-quipu-backoffice-dev-cookie-secret}
+      # password = password, bcrypt hash of "password"
+      - PASSWORD=$$2b$$10$$X7CAbw2Q87.zQMupLTYRZudoB4YD6Bm2cHZUV6uJ7KNJSLSXFKHV.
+      - MONGODB_URI=mongodb://mongo:27017/quipu
+      - MONGODB_DB_NAME=quipu
+      - DEV_DB_HOST=mysql
+      - DEV_DB_PORT=3306
+      - DEV_DB_USER=root
+      - DEV_DB_PASSWORD=root
+      - DEV_DB_NAME=quipu
+      # - R2_ENDPOINT=${R2_ENDPOINT:-}
+      # - R2_ACCESS_KEY=${R2_ACCESS_KEY:-}
+      # - R2_SECRET_KEY=${R2_SECRET_KEY:-}
+      # - R2_BUCKET_NAME=${R2_BUCKET_NAME:-}
+      # - R2_BUCKET_NAME_PDF=${R2_BUCKET_NAME_PDF:-} # Cloudflare R2 사용 시 주석 해제
+    command: sh -c "npm install && npm start"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8
+    container_name: backoffice_mysql
+    ports:
+      - "13306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=quipu
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    container_name: backoffice_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  backoffice_frontend_node_modules:
+  backoffice_backend_node_modules:
+  mongo_data:
+  mongo_config:
+  mysql_data:

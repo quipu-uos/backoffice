@@ -3,7 +3,6 @@ const app = express();
 const morgan = require("morgan");
 const winston = require("winston");
 
-//보안
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const session = require("express-session");
@@ -20,39 +19,51 @@ const PORT = process.env.PORT;
 const passportConfig = require("../src/passport");
 passportConfig();
 
-const { sequelize } = require("../src/models");
+const { connectDB } = require("../src/models");
 const loginRouter = require("../src/routes/login");
 const memberRouter = require("../src/routes/member");
 const seminaRouter = require("../src/routes/semina");
 const featureRouter = require("../src/routes/feature");
+const activityRouter = require("../src/routes/activity");
+const { publicRouter: commentPublicRouter, adminRouter: commentAdminRouter } = require("../src/routes/comment");
 
 const isProdOrTest = NODE_ENV === "production" || NODE_ENV === "test";
+const PORT_NUMBER = Number(PORT) || 3001;
+
+const SESSION_SECRET = process.env.COOKIE_SECRET;
+if (!SESSION_SECRET && isProdOrTest) {
+  throw new Error("COOKIE_SECRET 환경변수가 필요합니다.");
+}
+const safeSessionSecret = SESSION_SECRET || "dev-only-cookie-secret";
 
 const sessionOption = {
   resave: false,
   saveUninitialized: false,
-  secret: process.env.COOKIE_SECRET,
+  secret: safeSessionSecret,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 2, // 2시간
-    httpOnly: isProdOrTest, // production 또는 test이면 true
-    secure: isProdOrTest, // production 또는 test이면 true
-    ...(isProdOrTest && { sameSite: "None" }), // production 또는 test이면 추가
+    maxAge: 1000 * 60 * 60 * 2,
+    httpOnly: true,
+    secure: isProdOrTest,
+    ...(isProdOrTest && { sameSite: "None" }),
   },
-  ...(isProdOrTest && { proxy: true }), // production 또는 test이면 추가
+  ...(isProdOrTest && { proxy: true }),
 };
 
-app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(cookieParser(safeSessionSecret));
 app.use(session(sessionOption));
-app.use(passport.initialize()); // req.user, req.login, req.isAuthenticate, req.logout
-app.use(passport.session()); //connect.sid라는 이름으로 세션 쿠키가 브라우져로 전송
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.json());
 
 if (process.env.NODE_ENV === "development") {
   app.use(
     cors({
-      origin: process.env.CLIENT_ORIGIN_DEV, // 클라이언트의 Origin
+      origin: [
+        process.env.CLIENT_ORIGIN_DEV,
+        process.env.MAIN_ORIGIN_DEV,
+      ].filter(Boolean),
       methods: ["GET", "POST", "OPTIONS", "DELETE", "PATCH"],
-      credentials: true, // 쿠키를 포함한 요청을 허용}));
+      credentials: true,
     })
   );
   app.use(morgan("dev"));
@@ -60,22 +71,25 @@ if (process.env.NODE_ENV === "development") {
 } else {
   app.use(
     cors({
-      origin: process.env.CLIENT_ORIGIN, // 클라이언트의 Origin
-      methods: ["GET", "POST", "PATCH", "OPTIONS"],
-      credentials: true, // 쿠키를 포함한 요청을 허용}));
+      origin: [
+        process.env.CLIENT_ORIGIN,
+        process.env.MAIN_ORIGIN,
+      ].filter(Boolean),
+      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+      credentials: true,
     })
   );
-  app.enable("trust proxy");
+  app.set("trust proxy", 1); // nginx 한 단계만 신뢰, XFF 첫 번째 IP 사용
   app.use(morgan("combined"));
   app.use(hpp());
   app.use(express.urlencoded({ extended: false }));
   app.use(
     helmet.contentSecurityPolicy({
       directives: {
-        defaultSrc: ["'none'"], // 기본적으로 모든 리소스 차단
-        scriptSrc: ["'none'"], // JavaScript 실행 차단 (XSS 방지)
-        styleSrc: ["'none'"], // 외부 스타일 차단
-        frameSrc: ["'none'"], // iframe 포함 금지 (Clickjacking 방어)
+        defaultSrc: ["'none'"],
+        scriptSrc: ["'none'"],
+        styleSrc: ["'none'"],
+        frameSrc: ["'none'"],
       },
     })
   );
@@ -86,62 +100,50 @@ if (process.env.NODE_ENV === "development") {
   app.use(helmet.referrerPolicy({ policy: "strict-origin-when-cross-origin" }));
 }
 
-// swagger 관련 세팅
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swagger.json");
 
-async function startServer() {
-  try {
-    // Sequelize 연결
-    await sequelize.authenticate();
-    console.log("[LOG] DB 연결 성공");
+// 2026-05-09 startServer.js로 분리 by all4null
+// async function startServer() {
+//   try {
+//     await connectDB();
+//     console.log("[LOG] MongoDB 연결 성공");
 
-    // Sequelize 테이블 동기화
-    await sequelize.sync();
-    console.log("[LOG] DB 연결 성공");
+//     app.listen(PORT_NUMBER, () => {
+//       console.log(`PORT: ${PORT_NUMBER}`);
+//       console.log(`swagger: http://localhost:${PORT_NUMBER}/api-docs`);
+//       console.log(`server: http://localhost:${PORT_NUMBER}`);
+//     });
+//   } catch (err) {
+//     console.error("DB 연결 실패:", err);
+//     process.exit(1);
+//   }
+// }
 
-    // 주기적으로 DB 연결 유지
-    setInterval(async () => {
-      try {
-        await sequelize.query("SELECT 1");
-        console.log("[LOG] DB 연결 유지 로직 작동");
-      } catch (err) {
-        console.error("[ERROR] DB 연결 체크/유지 실패: ", err);
-      }
-    }, 3600000);
+// startServer();
 
-    // 서버 실행
-    app.listen(PORT, () => {
-      console.log(`PORT: ${PORT}`);
-      console.log(`swagger: http://localhost:${PORT}/api-docs`);
-      console.log(`server: http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error("DB 연결 실패:", err);
-    process.exit(1);
-  }
-}
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "backoffice backend is running" });
+});
 
-startServer();
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
-//login
 app.use("/bo/auth", loginRouter);
-
-//member
 app.use("/bo/member", memberRouter);
-
-//semina
 app.use("/bo/semina", seminaRouter);
-
-//feature
 app.use("/bo/feature", featureRouter);
+// 하위호환: 구버전 프론트가 /feature/* 를 호출하는 경우 지원
+app.use("/feature", featureRouter);
+app.use("/bo", activityRouter); // activityRouter 추가
+app.use("/", commentPublicRouter);       // 공개 comment API (POST /comments, GET /comments)
+app.use("/bo/admin", commentAdminRouter); // 관리자 comment API
 
-//{url}/api-docs 개발시에만
 if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 }
 
-//error handler
 const logger = winston.createLogger({
   level: "error",
   format: winston.format.json(),
@@ -153,10 +155,13 @@ app.use((err, req, res, next) => {
     console.log("[ERROR] error handler 동작");
     console.error(err.stack || err);
   } else {
-    logger.error(err.message || "Unexpected error"); // 운영 환경에서는 로그 파일에 저장
+    logger.error(err.message || "Unexpected error");
   }
 
   res.status(err.status || 500).json({
     error: { message: "Internal Server Error" },
   });
 });
+
+//server.js에서 app객체 사용가능하게 함
+module.exports = app;
