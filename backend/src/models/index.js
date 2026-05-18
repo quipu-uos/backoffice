@@ -7,6 +7,8 @@ const File = require("./File");
 const Feature = require("./Feature");
 const ActivityType = require("./ActivityType");
 const ActivityItem = require("./ActivityItem");
+const Comment = require("./Comment");
+const AuditLog = require("./AuditLog");
 
 async function connectDB() {
   if (!config?.mongodbUri) {
@@ -27,5 +29,7 @@ module.exports = {
   File,
   Feature,
   ActivityType,
-  ActivityItem
+  ActivityItem,
+  Comment,
+  AuditLog,
 };

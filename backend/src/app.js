@@ -25,6 +25,7 @@ const memberRouter = require("../src/routes/member");
 const seminaRouter = require("../src/routes/semina");
 const featureRouter = require("../src/routes/feature");
 const activityRouter = require("../src/routes/activity");
+const { publicRouter: commentPublicRouter, adminRouter: commentAdminRouter } = require("../src/routes/comment");
 
 const isProdOrTest = NODE_ENV === "production" || NODE_ENV === "test";
 const PORT_NUMBER = Number(PORT) || 3001;
@@ -57,7 +58,10 @@ app.use(express.json());
 if (process.env.NODE_ENV === "development") {
   app.use(
     cors({
-      origin: process.env.CLIENT_ORIGIN_DEV,
+      origin: [
+        process.env.CLIENT_ORIGIN_DEV,
+        process.env.MAIN_ORIGIN_DEV,
+      ].filter(Boolean),
       methods: ["GET", "POST", "OPTIONS", "DELETE", "PATCH"],
       credentials: true,
     })
@@ -67,12 +71,15 @@ if (process.env.NODE_ENV === "development") {
 } else {
   app.use(
     cors({
-      origin: process.env.CLIENT_ORIGIN,
-      methods: ["GET", "POST", "PATCH", "OPTIONS"],
+      origin: [
+        process.env.CLIENT_ORIGIN,
+        process.env.MAIN_ORIGIN,
+      ].filter(Boolean),
+      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       credentials: true,
     })
   );
-  app.enable("trust proxy");
+  app.set("trust proxy", 1); // nginx 한 단계만 신뢰, XFF 첫 번째 IP 사용
   app.use(morgan("combined"));
   app.use(hpp());
   app.use(express.urlencoded({ extended: false }));
@@ -130,6 +137,8 @@ app.use("/bo/feature", featureRouter);
 // 하위호환: 구버전 프론트가 /feature/* 를 호출하는 경우 지원
 app.use("/feature", featureRouter);
 app.use("/bo", activityRouter); // activityRouter 추가
+app.use("/", commentPublicRouter);       // 공개 comment API (POST /comments, GET /comments)
+app.use("/bo/admin", commentAdminRouter); // 관리자 comment API
 
 if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
